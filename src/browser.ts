@@ -1,8 +1,14 @@
 import { chromium, BrowserContext } from 'playwright';
 import path from 'path';
+import { fileURLToPath } from 'url';
 import { logActivity } from './utils/logger.js';
 
-export const PROFILE_DIR = path.join(process.cwd(), 'browser-profile');
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Always resolve profile relative to THIS file, not cwd
+// src/browser.ts -> ../browser-profile when compiled to dist/browser.js
+export const PROFILE_DIR = path.resolve(__dirname, '..', 'browser-profile');
 export const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36';
 
 let browserContext: BrowserContext | null = null;
