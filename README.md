@@ -35,7 +35,7 @@ npm run build
 You can add this server to Claude Desktop or Claude Code via the `mcp add` command:
 
 ```bash
-claude mcp add websearch-mcp npx --prefix /absolute/path/to/websearch-mcp start
+claude mcp add websearch-mcp node /absolute/path/to/websearch-mcp/dist/index.js
 ```
 
 Alternatively, edit your `claude_desktop_config.json` or `settings.json`:
