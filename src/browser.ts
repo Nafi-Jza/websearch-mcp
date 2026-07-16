@@ -65,6 +65,14 @@ export async function getBrowserContext(headed: boolean = false): Promise<Browse
             browserContext = await chromium.launchPersistentContext(PROFILE_DIR, launchOptions);
             isHeaded = headed;
             console.log("Browser context launched successfully.");
+
+            // FIX: If the user manually closes the browser window, clear the context
+            // so we don't try to reuse a dead browser on the next tool call.
+            browserContext.on('close', () => {
+                console.log("Browser context was closed.");
+                browserContext = null;
+            });
+
         } catch (error) {
             console.error("Failed to launch persistent context. Make sure no other instances are using this profile.");
             console.error(error);

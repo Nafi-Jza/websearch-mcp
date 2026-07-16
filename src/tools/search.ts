@@ -8,7 +8,11 @@ export async function runSearch(query: string): Promise<string> {
     // Headless Chromium ignores the UI-configured custom DNS over HTTPS settings.
     // By running headed, we inherit the Secure DNS setting which bypasses Internet Positif block.
     const context = await getBrowserContext(true);
-    const page = await context.newPage();
+
+    // Instead of always creating a new page, try to reuse the default blank page
+    // if one exists, to avoid piling up tabs or leaving blank windows after closing.
+    const pages = context.pages();
+    const page = pages.length > 0 ? pages[0] : await context.newPage();
 
     try {
         const searchUrl = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`;
@@ -65,6 +69,12 @@ export async function runSearch(query: string): Promise<string> {
         logActivity('search-error', `Search failed: ${(error as Error).message}`);
         return JSON.stringify({ error: `Search failed: ${(error as Error).message}` });
     } finally {
-        await page.close();
+        // If it's the very last page in the context, closing it will shut down the whole browser!
+        // Instead of closing it, just navigate away to a blank page to free memory.
+        if (context.pages().length > 1) {
+            await page.close().catch(() => {});
+        } else {
+            await page.goto('about:blank').catch(() => {});
+        }
     }
 }
