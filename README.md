@@ -30,15 +30,23 @@ npx playwright install chromium
 npm run build
 ```
 
-## Adding to Claude
+## Adding to Claude (How to start it)
 
-You can add this server to Claude Desktop or Claude Code via the `mcp add` command:
+MCP servers are not run as standalone background processes. Instead, Claude (whether it's Claude Code in your terminal or the Claude Desktop App) acts as the client and **starts the server automatically** when you configure it.
+
+To connect the server to Claude Code, run this command in your terminal:
 
 ```bash
 claude mcp add websearch-mcp node /absolute/path/to/websearch-mcp/dist/index.js
 ```
 
-Alternatively, edit your `claude_desktop_config.json` or `settings.json`:
+*(On Windows, use full paths with forward slashes or escaped backslashes, e.g., `node C:/Users/yourname/.../dist/index.js`)*
+
+Once you run this command, Claude Code will automatically launch the server in the background and keep it running for as long as you are using Claude. You don't need to run `npm start` manually!
+
+### Alternative: Manual Configuration
+
+If you prefer, you can manually edit your Claude configuration file (e.g., `claude_desktop_config.json` or `.claude/settings.json`):
 
 ```json
 {
