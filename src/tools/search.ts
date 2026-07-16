@@ -9,10 +9,9 @@ export async function runSearch(query: string): Promise<string> {
     // By running headed, we inherit the Secure DNS setting which bypasses Internet Positif block.
     const context = await getBrowserContext(true);
 
-    // Instead of always creating a new page, try to reuse the default blank page
-    // if one exists, to avoid piling up tabs or leaving blank windows after closing.
-    const pages = context.pages();
-    const page = pages.length > 0 ? pages[0] : await context.newPage();
+    // Always create a fresh page for the search. Reusing the default persistent tab
+    // often causes "Target page has been closed" errors due to internal Playwright behavior.
+    const page = await context.newPage();
 
     try {
         const searchUrl = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`;
@@ -69,12 +68,8 @@ export async function runSearch(query: string): Promise<string> {
         logActivity('search-error', `Search failed: ${(error as Error).message}`);
         return JSON.stringify({ error: `Search failed: ${(error as Error).message}` });
     } finally {
-        // If it's the very last page in the context, closing it will shut down the whole browser!
-        // Instead of closing it, just navigate away to a blank page to free memory.
-        if (context.pages().length > 1) {
-            await page.close().catch(() => {});
-        } else {
-            await page.goto('about:blank').catch(() => {});
-        }
+        // Just close this specific search tab to clean up memory.
+        // We catch the error just in case the tab was already destroyed by a crash.
+        await page.close().catch(() => {});
     }
 }
