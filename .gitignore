@@ -1,9 +1,6 @@
 node_modules/
 dist/
 browser-profile/
-temp_output/
-*.log
-test-*.json
-test-*.js
-mcp_server.config.json
 outputs/
+activity.log
+*.log

@@ -4,6 +4,7 @@ import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprot
 
 import { runSearch } from "./tools/search.js";
 import { scrapePage } from "./tools/scrape.js";
+import { scrapePageHeaded } from "./tools/scrape_headed.js";
 import { openBrowser } from "./tools/open.js";
 import { getYouTubeTranscript } from "./tools/youtube.js";
 import { closeBrowserContext } from "./browser.js";
@@ -22,7 +23,8 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
     return {
         tools: [
             { name: "search", description: "Search the web using DuckDuckGo.", inputSchema: { type: "object", properties: { query: { type: "string" } }, required: ["query"] } },
-            { name: "scrape", description: "Load a webpage and extract its main content as Markdown.", inputSchema: { type: "object", properties: { url: { type: "string" } }, required: ["url"] } },
+            { name: "scrape", description: "Load a webpage headlessly and extract its main content as Markdown. MANDATORY FALLBACK: If this tool returns an error or bot challenge ('[BOT_CHALLENGE_DETECTED]'), you MUST immediately call 'scrape_headed' with the exact same URL so the user can pass the test.", inputSchema: { type: "object", properties: { url: { type: "string" } }, required: ["url"] } },
+            { name: "scrape_headed", description: "Load a webpage in a visible headed browser to allow the user to pass bot verification (Cloudflare, Turnstile, CAPTCHA). Use this whenever 'scrape' fails with bot detection. Automatically extracts full Markdown once the challenge is passed.", inputSchema: { type: "object", properties: { url: { type: "string" } }, required: ["url"] } },
             { name: "open_browser", description: "Open a headed browser window to manually solve CAPTCHAs or log into sites.", inputSchema: { type: "object", properties: { url: { type: "string" } } } },
             { name: "youtube_transcript", description: "Extract transcript from YouTube video.", inputSchema: { type: "object", properties: { target: { type: "string" }, lang: { type: "string" } }, required: ["target"] } }
         ]
@@ -49,6 +51,13 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                 logActivity('scraping', `site: "${args.url}"`);
                 const result = await scrapePage(args.url);
                 logActivity('scrape-output', `Length ${result.length}`);
+                return { content: [{ type: "text", text: result }] };
+            }
+            case "scrape_headed": {
+                if (!args || typeof args.url !== 'string') throw new Error("Missing url");
+                logActivity('scraping-headed', `site: "${args.url}"`);
+                const result = await scrapePageHeaded(args.url);
+                logActivity('scrape_headed-output', `Length ${result.length}`);
                 return { content: [{ type: "text", text: result }] };
             }
             case "open_browser": {

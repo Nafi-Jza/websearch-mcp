@@ -66,12 +66,22 @@ Once configured, the following tools will be available to the AI:
 
 - **`search`**: Search the web using DuckDuckGo.
   - *Input*: `{ query: string }`
-- **`scrape`**: Load a webpage and extract its main content as Markdown.
+- **`scrape`**: Load a webpage headlessly and extract its main content as Markdown. If blocked by Cloudflare or bot verification, returns `[BOT_CHALLENGE_DETECTED]` with remediation instructions to call `scrape_headed`.
+  - *Input*: `{ url: string }`
+- **`scrape_headed`**: Visible headed browser fallback. Opens a Chromium window with the user's real profile so the user can pass bot verification (Cloudflare, Turnstile, CAPTCHA). Once solved, clicking **`✅ Finish & Scrape`** (or closing the window) immediately extracts clean Markdown.
   - *Input*: `{ url: string }`
 - **`open_browser`**: Open a headed browser window to manually solve CAPTCHAs or log into sites. Pauses the MCP server until you close the browser.
   - *Input*: `{ url?: string }`
 - **`youtube_transcript`**: Extract the transcript from a YouTube video.
   - *Input*: `{ target: string, lang?: string }`
+
+### Recommended Agent Fallback Workflow
+
+When an agent needs to read a URL:
+1. Call **`scrape`** first (fast, headless).
+2. If `scrape` succeeds, use the markdown output immediately.
+3. If `scrape` fails with `[BOT_CHALLENGE_DETECTED]`, **immediately call `scrape_headed`** with the exact same URL. Do not abandon the URL or run extra searches.
+4. The user completes verification on screen and clicks **`Finish & Scrape`** to return the content.
 
 ## Architecture & How It Works
 

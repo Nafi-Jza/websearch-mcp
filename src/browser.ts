@@ -1,18 +1,27 @@
 import { chromium, BrowserContext } from "playwright";
 import path from "path";
+import fs from "fs";
 import { fileURLToPath } from "url";
 import { logActivity } from "./utils/logger.js";
+import os from "os";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-export const PROFILE_DIR = path.resolve(__dirname, "..", "browser-profile");
-export const USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36";
+const hostChromiumProfile = path.join(os.homedir(), ".config", "chromium");
+export const PROFILE_DIR = fs.existsSync(hostChromiumProfile)
+    ? hostChromiumProfile
+    : path.resolve(__dirname, "..", "browser-profile");
+// Using a generic Linux user agent to match the actual OS browser being used
+export const USER_AGENT = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36";
 
 let browserContext: BrowserContext | null = null;
 let browserLaunchPromise: Promise<BrowserContext> | null = null;
 
 export async function getBrowserContext(headed: boolean = true): Promise<BrowserContext> {
+    if (!process.env.DISPLAY) process.env.DISPLAY = ":1";
+    if (!process.env.WAYLAND_DISPLAY) process.env.WAYLAND_DISPLAY = "wayland-1";
+
     if (browserContext) {
         try {
             browserContext.pages();
@@ -29,15 +38,26 @@ export async function getBrowserContext(headed: boolean = true): Promise<Browser
     browserLaunchPromise = (async () => {
         logActivity("browser", `Launching persistent context... (Headed: ${headed}) Using Playwright Chromium | Profile: ${PROFILE_DIR}`);
         const launchOptions: any = {
+            executablePath: "/usr/bin/chromium",
             headless: !headed,
             viewport: { width: 1280, height: 720 },
-            userAgent: USER_AGENT,
+            ignoreDefaultArgs: [
+                "--enable-automation",
+                "--disable-extensions",
+                "--disable-component-extensions-with-background-pages"
+            ],
+            env: {
+                ...process.env,
+                DISPLAY: process.env.DISPLAY || ":1",
+                WAYLAND_DISPLAY: process.env.WAYLAND_DISPLAY || "wayland-1"
+            },
             args: [
                 "--disable-blink-features=AutomationControlled",
                 "--disable-infobars",
                 "--window-position=0,0",
                 "--ignore-certificate-errors",
                 "--ignore-certificate-errors-spki-list",
+                "--enable-extensions",
             ]
         };
         try {
